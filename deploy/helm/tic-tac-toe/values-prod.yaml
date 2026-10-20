@@ -1,0 +1,20 @@
+# Production environment: pinned image, more client replicas, more resources.
+image:
+  tag: sha-424c13d
+
+client:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+server:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi

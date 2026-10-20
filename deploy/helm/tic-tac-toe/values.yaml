@@ -1,0 +1,45 @@
+# Image settings shared by both services.
+image:
+  # Tag for both images. Empty means the chart's appVersion.
+  # CI and ArgoCD set this to an immutable sha-<commit> tag.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Needed while the GHCR packages are private, e.g. [{ name: ghcr-pull }].
+imagePullSecrets: []
+
+server:
+  image:
+    repository: ghcr.io/jonhadar/tic-tac-toe-server
+  # Keep at 1: win statistics live in the server's memory, so several
+  # replicas would each keep their own counts.
+  replicaCount: 1
+  port: 5000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+client:
+  image:
+    repository: ghcr.io/jonhadar/tic-tac-toe-client
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      memory: 64Mi
+
+ingress:
+  enabled: false
+  className: ""
+  host: tic-tac-toe.local
+  annotations: {}
+  # e.g. [{ secretName: tic-tac-toe-tls, hosts: [tic-tac-toe.example.com] }]
+  tls: []
