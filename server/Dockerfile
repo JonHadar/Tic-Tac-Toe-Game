@@ -13,7 +13,13 @@ ENV NODE_ENV=production \
     PORT=5000
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+# Install production dependencies, then remove npm itself: it is not needed
+# at runtime and its bundled packages are a common source of vulnerabilities.
+RUN apk upgrade --no-cache \
+    && npm ci --omit=dev \
+    && npm cache clean --force \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* \
+              /usr/local/lib/node_modules/corepack /usr/local/bin/corepack
 COPY --from=build /app/dist ./dist
 USER node
 EXPOSE 5000
