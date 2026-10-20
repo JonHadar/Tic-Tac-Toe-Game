@@ -1,16 +1,25 @@
+export type Player = 'X' | 'O';
+export type Squares = (Player | null)[];
+export type Stats = Record<Player, number>;
+
+export interface Players {
+  player1: string;
+  player2: string;
+}
+
 export interface SquareProps {
-  value: string | null;
+  value: Player | null;
+  label: string;
   onSquareClick: () => void;
 }
 
 export interface BoardProps {
   xIsNext: boolean;
-  squares: (string | null)[];
-  onPlay: (nextSquares: (string | null)[]) => void;
-  players: {
-    player1: String
-    player2: String
-  }
+  squares: Squares;
+  onPlay: (nextSquares: Squares) => void;
+  players: Players;
+  sessionStats: Stats;
+  globalStats: Stats;
 }
 
 export interface StartScreenProps {
@@ -18,19 +27,19 @@ export interface StartScreenProps {
 }
 
 export interface ScoreBoardProps {
-    title: string;
-    xScore: number;
-    oScore: number;
-    color: string;
-    textColor?: string;
+  title: string;
+  xScore: number;
+  oScore: number;
+  color: string;
+  textColor?: string;
 }
 
 export interface GameGridProps {
-  squares: (string | null)[];
+  squares: Squares;
   onSquareClick: (i: number) => void;
 }
 
 export interface StatsPanelProps {
-  sessionStats: { X: number; O: number };
-  globalStats: { X: number; O: number };
+  sessionStats: Stats;
+  globalStats: Stats;
 }

@@ -1,15 +1,16 @@
-import { SquareProps } from './types';
-import Button from '@mui/material/Button'
+import type { SquareProps } from './types';
+import Button from '@mui/material/Button';
 
-function Square({ value, onSquareClick }: SquareProps) {
+function Square({ value, label, onSquareClick }: SquareProps) {
   return (
 
     <Button
       onClick={onSquareClick}
+      aria-label={value ? `${label}: ${value}` : label}
       sx={{
-        width: 150,
-        height: 150,
-        fontSize: '8rem',
+        width: { xs: 90, sm: 120, md: 150 },
+        height: { xs: 90, sm: 120, md: 150 },
+        fontSize: { xs: '4.5rem', sm: '6rem', md: '8rem' },
         fontWeight: 'bold',
         backgroundColor: 'wheat',
         border: '3px solid black',

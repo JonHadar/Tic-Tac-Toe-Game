@@ -1,9 +1,9 @@
-import { Paper, Typography, Stack, Box } from '@mui/material';
-import { ScoreBoardProps } from './types';
+import { Paper, Typography, Box } from '@mui/material';
+import type { ScoreBoardProps } from './types';
 
 export default function ScoreBoard({ title, xScore, oScore, color, textColor='red'}: ScoreBoardProps) {
     return (
-        <Paper elevation={3} sx={{ p: 2, m: 1, bgcolor: color, textAlign: 'center', minWidth: '200px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}>
+        <Paper component="section" aria-label={title} elevation={3} sx={{ p: 2, m: 1, bgcolor: color, textAlign: 'center', minWidth: { xs: '140px', md: '200px' }, boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', opacity: 0.8, color: textColor }}>
                 {title}
             </Typography>

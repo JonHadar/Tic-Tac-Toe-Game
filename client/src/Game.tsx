@@ -8,22 +8,38 @@ import ListItem from '@mui/material/ListItem';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import StartScreen from './StartScreen';
+import { calculateWinner } from './gameLogic';
+import { reportWin } from './api';
+import { useGlobalStats } from './useGlobalStats';
+import type { Players, Squares, Stats } from './types';
 
 export default function Game() {
 
-  const [history, setHistory] = useState([Array(9).fill(null)]);
+  const [history, setHistory] = useState<Squares[]>([Array(9).fill(null)]);
   const [currentMove, setCurrentMove] = useState(0);
   const xIsNext = currentMove % 2 === 0;
   const currentSquares = history[currentMove];
 
-  const [players, setPlayers] = useState({ player1: '', player2: '' });
-
+  const [players, setPlayers] = useState<Players>({ player1: '', player2: '' });
   const [gameStarted, setGameStarted] = useState(false);
 
-  function handlePlay(nextSquares: (string | null)[]) {
+  const [sessionStats, setSessionStats] = useState<Stats>({ X: 0, O: 0 });
+  const { stats: globalStats, refresh: refreshGlobalStats } = useGlobalStats();
+
+  function handlePlay(nextSquares: Squares) {
     const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
     setHistory(nextHistory);
     setCurrentMove(nextHistory.length - 1);
+
+    // A win is counted only when the winning move is played, so jumping
+    // back and forth through the move history never counts it twice.
+    const winner = calculateWinner(nextSquares);
+    if (winner) {
+      setSessionStats(prev => ({ ...prev, [winner]: prev[winner] + 1 }));
+      reportWin(winner)
+        .then(refreshGlobalStats)
+        .catch(error => console.error('Error reporting win:', error));
+    }
   }
 
   function jumpTo(nextMove: number) {
@@ -31,21 +47,15 @@ export default function Game() {
   }
 
   function handleGameStart(player1: string, player2: string) {
-    setPlayers({player1, player2})
-    setGameStarted(true)
+    setPlayers({ player1, player2 });
+    setGameStarted(true);
   }
 
-  const moves = history.map((squares, move) => {
-    let description;
-    if (move > 0) {
-      description = 'Go to move #' + move;
-    } else {
-      description = 'Go to game start';
-    }
+  const moves = history.map((_squares, move) => {
+    const description = move > 0 ? 'Go to move #' + move : 'Go to game start';
     return (
-      
-      <ListItem key={move}>
-        <Button variant="contained" onClick={() => jumpTo(move)} > {description} </Button>
+      <ListItem key={move} disablePadding sx={{ py: 0.5 }}>
+        <Button variant="contained" onClick={() => jumpTo(move)}>{description}</Button>
       </ListItem>
     );
   });
@@ -56,34 +66,40 @@ export default function Game() {
       <StartScreen onGameStart={handleGameStart}/>
     ) : (
 
-        <Box
+      <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: '100vh'
+          minHeight: '100vh',
+          py: 4
         }}
       >
-        <Container sx={{ mt:4 }}> 
-            <Stack
-              direction="row"
-              justifyContent="center"
-              alignItems="flex-start"
-              spacing={20}
-            >
+        <Container>
+          <Stack
+            direction={{ xs: 'column', lg: 'row' }}
+            justifyContent="center"
+            alignItems={{ xs: 'center', lg: 'flex-start' }}
+            spacing={{ xs: 4, lg: 8 }}
+          >
 
-              <Stack sx={{ transform: 'translateX(100px)' }}>
-                <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} players={players} />
-              </Stack>
+            <Board
+              xIsNext={xIsNext}
+              squares={currentSquares}
+              onPlay={handlePlay}
+              players={players}
+              sessionStats={sessionStats}
+              globalStats={globalStats}
+            />
 
-              <Stack sx={{padding: '69px', margin: '55px'}} > {/* moves history list */}
-                <Typography variant="h4" sx={{fontWeight: 'bold', color: 'red', whiteSpace: 'nowrap'}}> Moves History </Typography>
-                <List> {moves} </List>
-              </Stack>
-
+            <Stack alignItems={{ xs: 'center', lg: 'flex-start' }} sx={{ mt: { lg: '75px' } }}> {/* moves history list */}
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'red', whiteSpace: 'nowrap' }}>Moves History</Typography>
+              <List>{moves}</List>
             </Stack>
-        </Container> 
-      </Box>   
+
+          </Stack>
+        </Container>
+      </Box>
     )
-  );  
+  );
 }
