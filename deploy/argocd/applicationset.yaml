@@ -1,0 +1,53 @@
+# One Application per environment, generated from the Helm chart in this repo.
+# dev syncs automatically on every change to main; prod is synced by hand.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tic-tac-toe
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - env: dev
+            autoSync: true
+          - env: prod
+            autoSync: false
+  template:
+    metadata:
+      name: 'tic-tac-toe-{{ .env }}'
+      labels:
+        app.kubernetes.io/part-of: tic-tac-toe
+        environment: '{{ .env }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/JonHadar/Tic-Tac-Toe-Game---TypeScript-MUI-Express.git
+        targetRevision: main
+        path: deploy/helm/tic-tac-toe
+        helm:
+          releaseName: tic-tac-toe
+          valueFiles:
+            - 'values-{{ .env }}.yaml'
+          valuesObject:
+            # Created by deploy/scripts/local-argocd.sh while the GHCR images
+            # are private; a missing secret only produces a warning.
+            imagePullSecrets:
+              - name: ghcr-pull
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'tic-tac-toe-{{ .env }}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+  # Automated sync (with pruning and self-healing) only where autoSync is true.
+  templatePatch: |
+    {{- if .autoSync }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+    {{- end }}
