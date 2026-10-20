@@ -4,13 +4,16 @@ How Tic-Tac-Toe gets from a commit to running environments.
 
 ```mermaid
 flowchart LR
-    Dev[Pull request] --> CI[CI: tests, scan,<br/>kind deploy test]
-    CI -->|merge to main| Publish[Publish images<br/>to GHCR]
-    Publish --> Git[(Git: Helm chart<br/>+ values files)]
+    PR[Pull request] --> CI[CI: tests, scan,<br/>kind deploy test]
+    CI -->|merge to main| Publish[Publish images<br/>sha-commit tag]
+    Publish --> Bump[CI commits the tag<br/>to values-dev.yaml]
+    Bump --> Git[(Git)]
+    Release[Release PR<br/>tag to values-prod.yaml] --> Git
     Git -->|automated sync| DevEnv[tic-tac-toe-dev]
     Git -->|manual sync| ProdEnv[tic-tac-toe-prod]
-    Argo[Argo CD<br/>ApplicationSet] -.watches.-> Git
 ```
+
+Every running version is a commit: dev and prod run exactly the image tags written in their values files.
 
 ## Layout
 
@@ -21,6 +24,7 @@ flowchart LR
 | [`helm/tic-tac-toe/values-prod.yaml`](helm/tic-tac-toe/values-prod.yaml) | prod environment: pinned image tag, 2 client replicas |
 | [`argocd/applicationset.yaml`](argocd/applicationset.yaml) | Argo CD ApplicationSet that creates one Application per environment |
 | [`scripts/local-argocd.sh`](scripts/local-argocd.sh) | Runs the whole setup on a local kind cluster |
+| [`scripts/promote-to-prod.sh`](scripts/promote-to-prod.sh) | Opens a pull request that releases the dev image to prod |
 
 ## GitOps with Argo CD
 
@@ -71,9 +75,19 @@ kubectl -n tic-tac-toe-dev port-forward svc/tic-tac-toe-client 3000:80
 
 Remove everything: `kind delete cluster --name tic-tac-toe`.
 
-## Releasing to prod
+## From commit to production
 
-1. A change is merged to `main`; CI tests it and publishes images tagged `sha-<commit>`.
-2. dev picks up the change automatically.
-3. To release it, open a pull request that sets `image.tag` in `values-prod.yaml` to the tested `sha-<commit>`.
-4. After it is merged, sync `tic-tac-toe-prod` in Argo CD.
+1. **Merge to `main`.** CI tests the change, deploys it to a temporary cluster, scans it, and publishes the images tagged `sha-<commit>`.
+2. **dev updates itself.** The `promote-dev` CI job writes the new tag into `values-dev.yaml` and commits it to `main` (as `github-actions[bot]`). Argo CD sees the commit and rolls dev forward. Commits pushed with the workflow's own token don't start new pipeline runs, so this can't loop.
+3. **Release to prod.** When dev looks good, run:
+
+   ```bash
+   ./deploy/scripts/promote-to-prod.sh
+   ```
+
+   It opens a pull request that copies the dev tag into `values-prod.yaml`, so every release is reviewed and recorded in Git.
+4. **Merge and sync.** After the pull request is merged, sync `tic-tac-toe-prod` in Argo CD.
+
+Rolling back is the same flow in reverse: revert the commit that changed the tag.
+
+Why tags instead of `latest`: Argo CD deploys what the manifests say. If the tag never changes, the manifests never change, and a new image would never be rolled out. An immutable tag per commit makes every deployment visible, reviewable and reversible in Git.

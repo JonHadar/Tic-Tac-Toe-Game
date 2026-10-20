@@ -120,6 +120,7 @@ Every push to `main`, every version tag and every pull request runs [`.github/wo
 5. **Helm:** lint the chart and validate the rendered dev and prod manifests against the Kubernetes schemas with kubeconform.
 6. **Kubernetes:** create a temporary [kind](https://kind.sigs.k8s.io) cluster, load freshly built images into it, install the chart with the dev values, wait for every Pod to be ready, and run `helm test`. On failure it prints Pod logs and cluster events.
 7. **Publish** (pushes to `main` and version tags only): build both images with layer caching and push them to GitHub Container Registry, tagged `latest` and `sha-<commit>` on `main`, and `1.2.3` / `1.2` for a `v1.2.3` tag.
+8. **Deploy to dev** (`main` only): commit the new `sha-<commit>` tag to `values-dev.yaml`; Argo CD then rolls dev forward (see [GitOps](#gitops-with-argo-cd)).
 
 Publishing requires every check to pass. Pull requests run steps 1 to 6 only, so nothing is published until a change is merged.
 
@@ -153,7 +154,7 @@ kubectl -n tic-tac-toe create secret docker-registry ghcr-pull \
 
 ## GitOps with Argo CD
 
-An Argo CD [ApplicationSet](deploy/argocd/applicationset.yaml) deploys the chart to two environments: **dev** syncs automatically from `main` (with pruning and self-healing), and **prod** is synced by hand from a pinned image tag. [`deploy/scripts/local-argocd.sh`](deploy/scripts/local-argocd.sh) sets the whole thing up on a local kind cluster. See [deploy/README.md](deploy/README.md) for the flow, local setup and how to release to prod.
+An Argo CD [ApplicationSet](deploy/argocd/applicationset.yaml) deploys the chart to two environments: **dev** syncs automatically from `main` (with pruning and self-healing), and **prod** is synced by hand from a pinned image tag. After every merge, CI commits the new image tag to the dev values, so dev always runs the latest tested build; [`promote-to-prod.sh`](deploy/scripts/promote-to-prod.sh) opens a pull request that releases it to prod. [`deploy/scripts/local-argocd.sh`](deploy/scripts/local-argocd.sh) sets the whole thing up on a local kind cluster. See [deploy/README.md](deploy/README.md) for the flow, local setup and how to release to prod.
 
 ## Security
 

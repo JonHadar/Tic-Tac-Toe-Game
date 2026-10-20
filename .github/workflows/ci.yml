@@ -217,3 +217,38 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  promote-dev:
+    name: Deploy to dev (GitOps)
+    needs: publish
+    # Only for new commits on main; version tags are released to prod by hand.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Point dev at the image just published
+        env:
+          TAG: sha-${{ github.sha }}
+        run: |
+          # docker/metadata-action uses the 7-character short SHA.
+          TAG="${TAG:0:11}"
+          file=deploy/helm/tic-tac-toe/values-dev.yaml
+          yq -i '.image.tag = strenv(TAG)' "$file"
+          if git diff --quiet; then
+            echo "dev already runs $TAG"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Deploy $TAG to dev"
+          # Pushes made with GITHUB_TOKEN do not start new workflow runs, so this
+          # commit cannot trigger a loop. Retry if main moved in the meantime.
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((attempt * 5))
+          done
+          exit 1
