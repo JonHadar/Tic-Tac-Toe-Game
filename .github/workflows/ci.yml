@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server (type-check, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  client:
+    name: Client (lint, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    name: Docker (build and smoke test)
+    needs: [server, client]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images
+        run: docker compose build
+      - name: Start the stack and wait until healthy
+        run: docker compose up -d --wait
+      - name: Smoke test through nginx
+        run: |
+          curl --fail --silent http://localhost:3000/ | grep -q '<title>Tic-Tac-Toe</title>'
+          curl --fail --silent http://localhost:3000/api/health
+          curl --fail --silent -X POST -H 'Content-Type: application/json' \
+            -d '{"winner":"X"}' http://localhost:3000/api/win
+          curl --fail --silent http://localhost:3000/api/stats | grep -q '"X":1'
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Stop the stack
+        if: always()
+        run: docker compose down
