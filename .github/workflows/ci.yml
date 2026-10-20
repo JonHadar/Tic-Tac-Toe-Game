@@ -31,6 +31,15 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Dev server starts (npm run dev)
+        run: |
+          PORT=5055 npm run dev > dev.log 2>&1 &
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:5055/api/health; then exit 0; fi
+            sleep 1
+          done
+          cat dev.log
+          exit 1
 
   client:
     name: Client (lint, test, build)
@@ -49,6 +58,15 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - name: Dev server starts (npm run dev)
+        run: |
+          npm run dev -- --port 3055 --strictPort > dev.log 2>&1 &
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:3055/ | grep -q 'id="root"'; then exit 0; fi
+            sleep 1
+          done
+          cat dev.log
+          exit 1
 
   docker:
     name: Docker (build and smoke test)
