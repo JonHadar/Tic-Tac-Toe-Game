@@ -151,6 +151,10 @@ kubectl -n tic-tac-toe create secret docker-registry ghcr-pull \
   --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<token with read:packages>
 ```
 
+## GitOps with Argo CD
+
+An Argo CD [ApplicationSet](deploy/argocd/applicationset.yaml) deploys the chart to two environments: **dev** syncs automatically from `main` (with pruning and self-healing), and **prod** is synced by hand from a pinned image tag. [`deploy/scripts/local-argocd.sh`](deploy/scripts/local-argocd.sh) sets the whole thing up on a local kind cluster. See [deploy/README.md](deploy/README.md) for the flow, local setup and how to release to prod.
+
 ## Security
 
 - **Image scanning:** every pipeline run scans both images with [Trivy](https://trivy.dev). High and critical findings are reported in the repository's **Security → Code scanning** tab (public repository only), and a critical vulnerability that has a fix fails the pipeline, so such an image is never published.
@@ -181,7 +185,10 @@ kubectl -n tic-tac-toe create secret docker-registry ghcr-pull \
 │   ├── src/server.ts       Entry point
 │   ├── test/               API tests
 │   └── Dockerfile
-├── deploy/helm/tic-tac-toe/  Helm chart (dev and prod values)
+├── deploy/
+│   ├── helm/tic-tac-toe/   Helm chart (dev and prod values)
+│   ├── argocd/             Argo CD ApplicationSet
+│   └── scripts/            Local kind + Argo CD setup
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
 ```
