@@ -116,9 +116,17 @@ Every push to `main`, every version tag and every pull request runs [`.github/wo
 1. **Server:** install, type-check, test, build.
 2. **Client:** install, lint, test, type-check and build.
 3. **Docker:** once both pass, build both images, start the stack, wait for the health checks, then smoke-test the page and the API through nginx.
-4. **Publish** (pushes to `main` and version tags only): build both images with layer caching and push them to GitHub Container Registry, tagged `latest` and `sha-<commit>` on `main`, and `1.2.3` / `1.2` for a `v1.2.3` tag.
+4. **Scan:** in parallel with step 3, build each image and scan it with Trivy (see [Security](#security)).
+5. **Publish** (pushes to `main` and version tags only): build both images with layer caching and push them to GitHub Container Registry, tagged `latest` and `sha-<commit>` on `main`, and `1.2.3` / `1.2` for a `v1.2.3` tag.
 
-Pull requests run steps 1 to 3 only, so nothing is published until a change is merged.
+Publishing requires both the smoke test and the scan to pass. Pull requests run steps 1 to 4 only, so nothing is published until a change is merged.
+
+## Security
+
+- **Image scanning:** every pipeline run scans both images with [Trivy](https://trivy.dev). High and critical findings are reported in the repository's **Security → Code scanning** tab (public repository only), and a critical vulnerability that has a fix fails the pipeline, so such an image is never published.
+- **Automatic updates:** [Dependabot](.github/dependabot.yml) opens weekly pull requests for npm packages, Docker base images and GitHub Actions; each one goes through the full pipeline before it can be merged.
+- **Hardened images:** the server runs as a non-root user without npm in the runtime image, and both images apply Alpine security updates at build time.
+- **Least privilege:** the workflow token is read-only by default; only the scan job can write security results and only the publish job can push images.
 
 ## Docker images
 
