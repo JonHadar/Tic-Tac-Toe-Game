@@ -94,6 +94,47 @@ jobs:
               | kubeconform -strict -summary -kubernetes-version 1.33.0
           done
 
+  kubernetes:
+    name: Kubernetes (deploy to kind and test)
+    needs: [server, client, helm]
+    runs-on: ubuntu-latest
+    env:
+      CHART: deploy/helm/tic-tac-toe
+      NAMESPACE: tic-tac-toe
+      TAG: ci-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v5
+      - name: Create a temporary cluster
+        uses: helm/kind-action@v1.15.1
+        with:
+          cluster_name: ci
+      - name: Build images and load them into the cluster
+        run: |
+          for service in server client; do
+            image="ghcr.io/jonhadar/tic-tac-toe-$service:$TAG"
+            docker build -t "$image" "./$service"
+            kind load docker-image --name ci "$image"
+          done
+      - name: Install the chart with dev values
+        run: |
+          helm install tic-tac-toe "$CHART" \
+            --namespace "$NAMESPACE" --create-namespace \
+            -f "$CHART/values-dev.yaml" \
+            --set image.tag="$TAG" \
+            --set image.pullPolicy=Never \
+            --wait --timeout 3m
+          kubectl -n "$NAMESPACE" get pods
+      - name: Run helm test
+        run: helm test tic-tac-toe --namespace "$NAMESPACE" --logs
+      - name: Show cluster state on failure
+        if: failure()
+        run: |
+          kubectl -n "$NAMESPACE" get all
+          kubectl -n "$NAMESPACE" describe pods
+          kubectl -n "$NAMESPACE" logs --all-containers --prefix -l app.kubernetes.io/name=tic-tac-toe --tail=100 || true
+          kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp
+
   scan:
     name: Scan ${{ matrix.service }} image
     needs: [server, client]
@@ -136,7 +177,7 @@ jobs:
   publish:
     name: Publish ${{ matrix.service }} image
     # Images are published only if every check passes.
-    needs: [docker, scan, helm]
+    needs: [docker, scan, kubernetes]
     # Only real pushes to main or version tags publish; pull requests just test.
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
