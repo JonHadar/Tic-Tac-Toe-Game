@@ -1,11 +1,13 @@
 services:
   server:
+    image: ghcr.io/jonhadar/tic-tac-toe-server:${TAG:-latest}
     build: ./server
     environment:
       - PORT=5000
     restart: unless-stopped
 
   client:
+    image: ghcr.io/jonhadar/tic-tac-toe-client:${TAG:-latest}
     build: ./client
     ports:
       - "${CLIENT_PORT:-3000}:80"

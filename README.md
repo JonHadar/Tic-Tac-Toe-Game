@@ -65,6 +65,22 @@ docker compose up --build
 
 Open http://localhost:3000. To use another port: `CLIENT_PORT=8080 docker compose up --build`.
 
+### Or run the published images
+
+Every merge to `main` publishes both images to GitHub Container Registry, so you can run the app without building anything:
+
+```bash
+docker compose pull
+docker compose up --no-build
+```
+
+To run a specific release instead of `latest`: `TAG=1.0.0 docker compose up --no-build`.
+
+| Image | Tags |
+|---|---|
+| `ghcr.io/jonhadar/tic-tac-toe-server` | `latest`, `sha-<commit>`, `<version>` |
+| `ghcr.io/jonhadar/tic-tac-toe-client` | `latest`, `sha-<commit>`, `<version>` |
+
 ## Run locally for development
 
 Requires Node.js 22 or newer. Use two terminals:
@@ -95,11 +111,14 @@ cd client && npm run lint && npm test && npm run build
 
 ## CI/CD pipeline
 
-Every push to `main` and every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+Every push to `main`, every version tag and every pull request runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 
 1. **Server:** install, type-check, test, build.
 2. **Client:** install, lint, test, type-check and build.
 3. **Docker:** once both pass, build both images, start the stack, wait for the health checks, then smoke-test the page and the API through nginx.
+4. **Publish** (pushes to `main` and version tags only): build both images with layer caching and push them to GitHub Container Registry, tagged `latest` and `sha-<commit>` on `main`, and `1.2.3` / `1.2` for a `v1.2.3` tag.
+
+Pull requests run steps 1 to 3 only, so nothing is published until a change is merged.
 
 ## Docker images
 
