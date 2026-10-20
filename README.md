@@ -118,9 +118,10 @@ Every push to `main`, every version tag and every pull request runs [`.github/wo
 3. **Docker:** once both pass, build both images, start the stack, wait for the health checks, then smoke-test the page and the API through nginx.
 4. **Scan:** in parallel with step 3, build each image and scan it with Trivy (see [Security](#security)).
 5. **Helm:** lint the chart and validate the rendered dev and prod manifests against the Kubernetes schemas with kubeconform.
-6. **Publish** (pushes to `main` and version tags only): build both images with layer caching and push them to GitHub Container Registry, tagged `latest` and `sha-<commit>` on `main`, and `1.2.3` / `1.2` for a `v1.2.3` tag.
+6. **Kubernetes:** create a temporary [kind](https://kind.sigs.k8s.io) cluster, load freshly built images into it, install the chart with the dev values, wait for every Pod to be ready, and run `helm test`. On failure it prints Pod logs and cluster events.
+7. **Publish** (pushes to `main` and version tags only): build both images with layer caching and push them to GitHub Container Registry, tagged `latest` and `sha-<commit>` on `main`, and `1.2.3` / `1.2` for a `v1.2.3` tag.
 
-Publishing requires every check to pass. Pull requests run steps 1 to 5 only, so nothing is published until a change is merged.
+Publishing requires every check to pass. Pull requests run steps 1 to 6 only, so nothing is published until a change is merged.
 
 ## Kubernetes (Helm)
 
