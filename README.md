@@ -117,9 +117,38 @@ Every push to `main`, every version tag and every pull request runs [`.github/wo
 2. **Client:** install, lint, test, type-check and build.
 3. **Docker:** once both pass, build both images, start the stack, wait for the health checks, then smoke-test the page and the API through nginx.
 4. **Scan:** in parallel with step 3, build each image and scan it with Trivy (see [Security](#security)).
-5. **Publish** (pushes to `main` and version tags only): build both images with layer caching and push them to GitHub Container Registry, tagged `latest` and `sha-<commit>` on `main`, and `1.2.3` / `1.2` for a `v1.2.3` tag.
+5. **Helm:** lint the chart and validate the rendered dev and prod manifests against the Kubernetes schemas with kubeconform.
+6. **Publish** (pushes to `main` and version tags only): build both images with layer caching and push them to GitHub Container Registry, tagged `latest` and `sha-<commit>` on `main`, and `1.2.3` / `1.2` for a `v1.2.3` tag.
 
-Publishing requires both the smoke test and the scan to pass. Pull requests run steps 1 to 4 only, so nothing is published until a change is merged.
+Publishing requires every check to pass. Pull requests run steps 1 to 5 only, so nothing is published until a change is merged.
+
+## Kubernetes (Helm)
+
+The [Helm chart](deploy/helm/tic-tac-toe) deploys the same two images to Kubernetes:
+
+| Resource | Details |
+|---|---|
+| Server Deployment + Service | 1 replica (stats live in memory), probes on `/api/health`, non-root, read-only filesystem |
+| Client Deployment + Service | nginx; `API_UPSTREAM` points it at the server Service |
+| Ingress | optional, `ingress.enabled=true` |
+| Helm test | a Pod that checks the page, the API and win recording through the client Service |
+
+Environments are values files: [`values-dev.yaml`](deploy/helm/tic-tac-toe/values-dev.yaml) and [`values-prod.yaml`](deploy/helm/tic-tac-toe/values-prod.yaml) (pinned image, 2 client replicas, more resources). `image.tag` sets the tag of both images.
+
+```bash
+helm install tic-tac-toe deploy/helm/tic-tac-toe \
+  -n tic-tac-toe --create-namespace \
+  -f deploy/helm/tic-tac-toe/values-dev.yaml
+helm test tic-tac-toe -n tic-tac-toe
+kubectl -n tic-tac-toe port-forward svc/tic-tac-toe-client 3000:80
+```
+
+While the images are private, create a pull secret and pass it with `--set imagePullSecrets[0].name=ghcr-pull`:
+
+```bash
+kubectl -n tic-tac-toe create secret docker-registry ghcr-pull \
+  --docker-server=ghcr.io --docker-username=<github-user> --docker-password=<token with read:packages>
+```
 
 ## Security
 
@@ -144,13 +173,14 @@ Publishing requires both the smoke test and the scan to pass. Pull requests run 
 │   │   ├── gameLogic.ts    Winner and draw detection
 │   │   ├── api.ts          Calls to the Express API
 │   │   └── *.test.ts(x)    Tests
-│   ├── nginx.conf          Static files + /api proxy
+│   ├── templates/          nginx config: static files + /api proxy
 │   └── Dockerfile
 ├── server/                 Express API
 │   ├── src/app.ts          Routes
 │   ├── src/server.ts       Entry point
 │   ├── test/               API tests
 │   └── Dockerfile
+├── deploy/helm/tic-tac-toe/  Helm chart (dev and prod values)
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
 ```

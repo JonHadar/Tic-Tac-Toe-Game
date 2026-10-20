@@ -1,0 +1,30 @@
+# `helm test <release>` runs this Pod: it checks the app end to end through
+# the client Service, the same path a browser uses (nginx -> /api -> server).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "tic-tac-toe.fullname" . }}-test
+  labels:
+    {{- include "tic-tac-toe.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: curlimages/curl:8.17.0
+      command: [sh, -ec]
+      args:
+        - |
+          base="http://{{ include "tic-tac-toe.clientName" . }}:{{ .Values.client.service.port }}"
+          echo "Page loads"
+          curl -fsS "$base/" | grep -q '<title>Tic-Tac-Toe</title>'
+          echo "API is healthy"
+          curl -fsS "$base/api/health" | grep -q '"status":"ok"'
+          echo "A win is recorded"
+          before=$(curl -fsS "$base/api/stats" | sed -E 's/.*"X":([0-9]+).*/\1/')
+          curl -fsS -X POST -H 'Content-Type: application/json' -d '{"winner":"X"}' "$base/api/win" > /dev/null
+          after=$(curl -fsS "$base/api/stats" | sed -E 's/.*"X":([0-9]+).*/\1/')
+          test "$after" -eq $((before + 1))
+          echo "All checks passed"

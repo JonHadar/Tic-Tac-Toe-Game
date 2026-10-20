@@ -74,6 +74,26 @@ jobs:
         if: always()
         run: docker compose down
 
+  helm:
+    name: Helm chart (lint, validate)
+    runs-on: ubuntu-latest
+    env:
+      CHART: deploy/helm/tic-tac-toe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v5
+      - name: Install kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+      - name: Lint and validate dev and prod manifests
+        run: |
+          for env in dev prod; do
+            helm lint "$CHART" -f "$CHART/values-$env.yaml"
+            helm template tic-tac-toe "$CHART" -f "$CHART/values-$env.yaml" --set ingress.enabled=true \
+              | kubeconform -strict -summary -kubernetes-version 1.33.0
+          done
+
   scan:
     name: Scan ${{ matrix.service }} image
     needs: [server, client]
@@ -115,8 +135,8 @@ jobs:
 
   publish:
     name: Publish ${{ matrix.service }} image
-    # Images are published only if they pass the smoke test and the security scan.
-    needs: [docker, scan]
+    # Images are published only if every check passes.
+    needs: [docker, scan, helm]
     # Only real pushes to main or version tags publish; pull requests just test.
     if: github.event_name == 'push'
     runs-on: ubuntu-latest

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: tic-tac-toe
+description: Two-player Tic-Tac-Toe - React client behind nginx and an Express API
+type: application
+version: 0.1.0
+# Default image tag for both images when image.tag is not set.
+appVersion: "latest"
