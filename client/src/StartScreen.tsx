@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Container, Stack, Typography, TextField, Button, Box } from '@mui/material';
-import { StartScreenProps } from './types';
-import React from 'react'
+import type { StartScreenProps } from './types';
+import type React from 'react';
 
 export default function StartScreen({onGameStart} : StartScreenProps) {
 
@@ -29,11 +29,11 @@ export default function StartScreen({onGameStart} : StartScreenProps) {
           }}
         >
             
-          <Typography variant='h3' gutterBottom sx={{ whiteSpace: 'nowrap', fontWeight: 'bold' }}> 
-            Welcome To The "Tic Tac Toe" Game 
+          <Typography variant='h3' component='h1' gutterBottom sx={{ fontWeight: 'bold', textAlign: 'center', fontSize: { xs: '2rem', sm: '3rem' } }}>
+            Welcome To The "Tic Tac Toe" Game
           </Typography>
 
-          <Box  //The form the responsibile for the player's input and handle the pressing on the start button
+          <Box  // The form responsible for the players' input and handle the pressing on the start button
             component="form"
             onSubmit={handleStart}
             sx={{ width: '100%' }}
