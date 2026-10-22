@@ -221,7 +221,10 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ steps.image.outputs.name }}
-          # main -> latest + sha-<commit>; tag v1.2.3 -> 1.2.3 and 1.2
+          # main -> latest + sha-<commit>; tag v1.2.3 -> 1.2.3 and 1.2.
+          # latest=false stops version tags from also moving `latest`, so it
+          # always means "newest build of main", even when tagging an older commit.
+          flavor: latest=false
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
