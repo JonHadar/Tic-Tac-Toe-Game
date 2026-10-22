@@ -14,7 +14,7 @@ set -euo pipefail
 CLUSTER="${CLUSTER:-tic-tac-toe}"
 REVISION="${REVISION:-main}"
 ARGOCD_CHART_VERSION="10.10.5"
-DEFAULT_REPO_URL="https://github.com/JonHadar/Tic-Tac-Toe-Game---TypeScript-MUI-Express.git"
+DEFAULT_REPO_URL="https://github.com/JonHadar/Tic-Tac-Toe-Game.git"
 REPO_URL="${REPO_URL:-$DEFAULT_REPO_URL}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 

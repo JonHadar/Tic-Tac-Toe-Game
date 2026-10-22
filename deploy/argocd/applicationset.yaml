@@ -24,7 +24,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/JonHadar/Tic-Tac-Toe-Game---TypeScript-MUI-Express.git
+        repoURL: https://github.com/JonHadar/Tic-Tac-Toe-Game.git
         targetRevision: main
         path: deploy/helm/tic-tac-toe
         helm:

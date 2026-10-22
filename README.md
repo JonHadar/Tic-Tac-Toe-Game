@@ -1,6 +1,6 @@
 # Tic-Tac-Toe
 
-[![CI](https://github.com/JonHadar/Tic-Tac-Toe-Game---TypeScript-MUI-Express/actions/workflows/ci.yml/badge.svg)](https://github.com/JonHadar/Tic-Tac-Toe-Game---TypeScript-MUI-Express/actions/workflows/ci.yml)
+[![CI](https://github.com/JonHadar/Tic-Tac-Toe-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/JonHadar/Tic-Tac-Toe-Game/actions/workflows/ci.yml)
 
 A full-stack, two-player Tic-Tac-Toe game: a React + TypeScript client with Material UI, and an Express API that keeps all-time win statistics. It ships as two production Docker images behind nginx and is tested and smoke-tested on every push with GitHub Actions.
 
