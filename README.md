@@ -193,3 +193,7 @@ An Argo CD [ApplicationSet](deploy/argocd/applicationset.yaml) deploys the chart
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
 ```
+
+## Author
+
+Jonathan Hadar ([@JonHadar](https://github.com/JonHadar)) · [Portfolio](https://portfolio-pearl-xi-6huqdetszk.vercel.app)
