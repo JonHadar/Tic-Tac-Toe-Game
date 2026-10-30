@@ -196,4 +196,4 @@ An Argo CD [ApplicationSet](deploy/argocd/applicationset.yaml) deploys the chart
 
 ## Author
 
-Jonathan Hadar ([@JonHadar](https://github.com/JonHadar)) · [Portfolio](https://portfolio-pearl-xi-6huqdetszk.vercel.app)
+Jonathan Hadar ([@JonHadar](https://github.com/JonHadar)) · [Portfolio](https://jonathan-hadar.vercel.app)
