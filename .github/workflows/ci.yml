@@ -124,7 +124,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: azure/setup-helm@v5
       - name: Create a temporary cluster
-        uses: helm/kind-action@v1.15.1
+        uses: helm/kind-action@v1.15.2
         with:
           cluster_name: ci
       - name: Build images and load them into the cluster
